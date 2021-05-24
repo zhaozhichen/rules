@@ -422,6 +422,15 @@ func (r *StandardRuleset) maybeEliminateSnakes(b *BoardState) error {
 		}
 	}
 
+	var live_snakes []Snake
+
+	for _, snake := range b.Snakes {
+		if snake.EliminatedCause == NotEliminated {
+			live_snakes = append(live_snakes, snake)
+		}
+	}
+	b.Snakes = live_snakes
+
 	return nil
 }
 
