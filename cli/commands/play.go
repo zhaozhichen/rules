@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/BattlesnakeOfficial/rules"
-	"github.com/google/uuid"
-	"github.com/spf13/cobra"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -15,6 +12,10 @@ import (
 	"path"
 	"strconv"
 	"time"
+
+	"github.com/BattlesnakeOfficial/rules"
+	"github.com/google/uuid"
+	"github.com/spf13/cobra"
 )
 
 type Battlesnake struct {
@@ -136,6 +137,7 @@ var run = func(cmd *cobra.Command, args []string) {
 	for v := false; !v; v, _ = ruleset.IsGameOver(state) {
 		Turn++
 		ruleset, royale = getRuleset(Seed, Turn, snakes)
+
 		state, outOfBounds = createNextBoardState(ruleset, royale, state, outOfBounds, snakes)
 		if ViewMap {
 			printMap(state, outOfBounds, Turn)
@@ -149,6 +151,7 @@ var run = func(cmd *cobra.Command, args []string) {
 	} else {
 		var winner string
 		isDraw := true
+
 		for _, snake := range state.Snakes {
 			if snake.EliminatedCause == rules.NotEliminated {
 				isDraw = false
@@ -241,17 +244,25 @@ func initializeBoardFromArgs(ruleset rules.Ruleset, snakes []Battlesnake) *rules
 }
 
 func createNextBoardState(ruleset rules.Ruleset, royale rules.RoyaleRuleset, state *rules.BoardState, outOfBounds []rules.Point, snakes []Battlesnake) (*rules.BoardState, []rules.Point) {
+	var live_snakes []Battlesnake
+	for _, snake := range snakes {
+		for _, state_snake := range state.Snakes {
+			if snake.ID == state_snake.ID {
+				live_snakes = append(live_snakes, snake)
+			}
+		}
+	}
 	var moves []rules.SnakeMove
 	if Sequential {
-		for _, snake := range snakes {
+		for _, snake := range live_snakes {
 			moves = append(moves, getMoveForSnake(state, snake, outOfBounds))
 		}
 	} else {
-		c := make(chan rules.SnakeMove, len(snakes))
-		for _, snake := range snakes {
+		c := make(chan rules.SnakeMove, len(live_snakes))
+		for _, snake := range live_snakes {
 			go getConcurrentMoveForSnake(state, snake, outOfBounds, c)
 		}
-		for range snakes {
+		for range live_snakes {
 			moves = append(moves, <-c)
 		}
 	}
